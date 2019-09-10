@@ -12,7 +12,7 @@
 
 (defn new-words [word letters]
   (->> (for [index (range (count word)) letter letters] (change-letter word index letter))
-       (conj (for [index (range (count word))] (remove-letter word index)))
-       (conj (for [index (range (inc (count word))) letter letters] (add-letter word index letter)))))
+   (concat (for [index (range (count word))] (remove-letter word index)))
+   (concat (for [index (range (inc (count word))) letter letters] (add-letter word index letter)))))
 
-(new-words "causes" letters)
+(def words (remove #(= % "causes") (new-words "causes" letters)))
