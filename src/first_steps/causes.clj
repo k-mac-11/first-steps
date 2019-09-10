@@ -15,4 +15,15 @@
    (concat (for [index (range (count word))] (remove-letter word index)))
    (concat (for [index (range (inc (count word))) letter letters] (add-letter word index letter)))))
 
-(def words (remove #(= % "causes") (new-words "causes" letters)))
+(with-open [rdr (clojure.java.io/reader "word.list")]
+  (def candidates (set (line-seq rdr))))
+
+(defn altered-words [word] (set (remove #(= % word) (new-words word letters))))
+
+(defn to-visit [altered-words candidates] (clojure.set/intersection altered-words candidates))
+
+(loop [friends #{}
+       to-visit (to-visit (altered-words "causes") candidates)]
+  (if (empty? to-visit)
+    friends
+    (recur (conj friends (first to-visit)) (set (conj to-visit (to-visit (altered-words (first to-visit)) candidates))))))
