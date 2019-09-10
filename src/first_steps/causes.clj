@@ -26,4 +26,5 @@
        to-visit (to-visit (altered-words "causes") candidates)]
   (if (empty? to-visit)
     friends
-    (recur (conj friends (first to-visit)) (set (conj to-visit (to-visit (altered-words (first to-visit)) candidates))))))
+    (recur (clojure.set/union  friends (set (first to-visit)))
+           (clojure.set/union  to-visit (clojure.set/difference (to-visit (altered-words (first to-visit)) candidates) friends)))))
