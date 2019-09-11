@@ -15,16 +15,34 @@
    (concat (for [index (range (count word))] (remove-letter word index)))
    (concat (for [index (range (inc (count word))) letter letters] (add-letter word index letter)))))
 
-(with-open [rdr (clojure.java.io/reader "word.list")]
-  (def candidates (set (line-seq rdr))))
+(def candidates (set (clojure.string/split-lines (slurp "word.list"))))
 
-(defn altered-words [word] (set (remove #(= % word) (new-words word letters))))
+(defn altered-words [word]
+  (remove #(= % word) (new-words word letters)))
 
-(defn to-visit [altered-words candidates] (clojure.set/intersection altered-words candidates))
+(defn to-visit [altered-words candidates]
+  (filter candidates altered-words))
 
-(loop [friends #{}
-       to-visit (to-visit (altered-words "causes") candidates)]
-  (if (empty? to-visit)
+(defn network [word]
+  (loop [candidates candidates
+         friends #{word}
+         pending [word]]
+  (if (empty? pending)
     friends
-    (recur (clojure.set/union  friends (set (first to-visit)))
-           (clojure.set/union  to-visit (clojure.set/difference (to-visit (altered-words (first to-visit)) candidates) friends)))))
+    (let [next-word (peek pending)
+          new-friends (remove friends (to-visit (altered-words next-word) candidates))]
+      (recur (reduce disj candidates new-friends)
+             (conj friends next-word)
+             (into (pop  pending) new-friends))))))
+
+(defn friends [word candidates]
+  (filter candidates (remove #(= % word) (new-words word letters))))
+
+(defn my-network [word]
+  (loop [visited word
+         to-visit (friends word candidates)]
+    (if (empty? to-visit)
+      visited
+      (let [new-friend (peek to-visit)
+            new-to-visit (pop to-visit)]
+        (recur (concat visited new-friend) (concat (new-to-visit) (remove new-to-visit (remove visited (friends new-friend candidates)))))))))
