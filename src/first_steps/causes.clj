@@ -12,15 +12,27 @@
 
 (defn new-words [word letters]
   (->> (for [index (range (count word)) letter letters] (change-letter word index letter))
-   (concat (for [index (range (count word))] (remove-letter word index)))
-   (concat (for [index (range (inc (count word))) letter letters] (add-letter word index letter)))))
+       (concat (for [index (range (count word))] (remove-letter word index)))
+       (concat (for [index (range (inc (count word))) letter letters] (add-letter word index letter)))))
 
-(with-open [rdr (clojure.java.io/reader "word.list")]
-  (def candidates (set (line-seq rdr))))
+;;There's not much reason to leverage with-open outside of the def invocation
+;;here. It's atypical.
 
-(defn altered-words [word] (set (remove #(= % word) (new-words word letters))))
+;;Note: the invocation of clojure.core/line-seq on the (temporarily opened)
+;;reader is lazy. If you don't force the sequence or do something with it before
+;;leaving the scope of the with-open body, you'll end up with an empy
+;;sequence (since the reader will have closed). The call to clojure.core/set
+;;here has to traverse the input (the line-seq), so it ends up actually doing
+;;work.
+(def candidates
+  (with-open [rdr (clojure.java.io/reader "word.list")]
+    (set (line-seq rdr))))
 
-(defn to-visit [altered-words candidates] (clojure.set/intersection altered-words candidates))
+(defn altered-words [word]
+  (set (remove #(= % word) (new-words word letters))))
+
+(defn to-visit [altered-words candidates]
+  (clojure.set/intersection altered-words candidates))
 
 (loop [friends #{}
        to-visit (to-visit (altered-words "causes") candidates)]
