@@ -127,6 +127,15 @@
         (recur (reduce disj candidates new-friends)
                (conj  friends next-word)
                (into  (pop pending) new-friends))))))
+
+
+;;We can get the "answer" by invoking either with a count...
+;;(count (social-network "causes"))
+;;(count (social-network-faster "causes"))
+
+;;Additional, there's room for additional optimization, but that's left
+;;as an exercise for the reader.
+
 (comment
   ;;OLD
   (def alphabet
