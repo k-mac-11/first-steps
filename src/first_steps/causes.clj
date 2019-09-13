@@ -28,7 +28,7 @@
          friends #{word}
          pending [word]]
   (if (empty? pending)
-    friends
+    (count friends)
     (let [next-word (peek pending)
           new-friends (remove friends (to-visit (altered-words next-word) candidates))]
       (recur (reduce disj candidates new-friends)
@@ -42,7 +42,27 @@
   (loop [visited word
          to-visit (friends word candidates)]
     (if (empty? to-visit)
+      (count visited)
+      (let [new-friend (first to-visit)
+            new-to-visit (rest to-visit)
+            new-friends (remove (set visited) (friends new-friend candidates))]
+        (recur (conj visited new-friend) (concat new-to-visit new-friends))))))
+
+(defn seq-contains? [xs k]
+  (some (fn [v] (when (= v k) v)) xs))
+
+(defn my-network [word]
+  (loop [visited  [word]
+         to-visit (friends word candidates)]
+    (if (empty? to-visit)
       visited
-      (let [new-friend (peek to-visit)
-            new-to-visit (pop to-visit)]
-        (recur (concat visited new-friend) (concat (new-to-visit) (remove new-to-visit (remove visited (friends new-friend candidates)))))))))
+      (let [new-friend   (first to-visit)
+            new-to-visit (rest  to-visit)
+            new-friends  (friends new-friend candidates)
+            really-new-friends (filter #(seq-contains? visited %)
+                                       new-friends)
+            ]
+        (recur (conj visited new-friend)
+               (distinct
+                (concat new-to-visit
+                        really-new-friends)))))))
