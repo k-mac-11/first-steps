@@ -15,13 +15,16 @@
        (into [])
        ))
 
+(defn no-cycle? [edges edge]
+  (true))
+
 (defn  get-mst [edges]
-  (loop [min-edges [] first-nodes [] second-nodes [] x 0]
+  (loop [min-edges [] x 0]
     (if (= x (count edges))
       min-edges    
-      (if (or (not (contains? first-nodes (first (edges x)))) (not (contains? second-nodes (second (edges x)))))
-        (recur (conj min-edges (edges x)) (into [] (map first min-edges)) (into [] (map second min-edges)) (inc x))
-        (recur min-edges (into [] (map first min-edges)) (into [] (map second min-edges)) (inc x))))))
+      (if no-cycle? 
+        (recur (conj min-edges (edges x)) (inc x))
+        (recur min-edges (inc x))))))
 
 (defn  get-weight [edges] (reduce + (map last edges)))
 
