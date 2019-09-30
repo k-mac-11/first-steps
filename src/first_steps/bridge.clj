@@ -2,6 +2,10 @@
 
 (def goal {:t 1 :p1 1 :p2 1 :p3 1 :p4 1})
 
+(def weights [1 2 5 8])
+
+(def goal-weight 15)
+
 (def all-states (for [y [0 1] x1 [0 1] x2 [0 1] x3 [0 1] x4 [0 1]]
                   {:t y :p1 x1 :p2 x2 :p3 x3 :p4 x4}))
 
@@ -33,23 +37,59 @@
     true
     false))
 
-(defn all-possible-states [state all-states]
-  (remove nil?
-   (for [x (range (count all-states))]
-    (if (possible-state state (nth all-states x))
-      (nth all-states x)))))
+(defn get-weight [node neighbor weights]
+  (if (= (node :t) 0)
+    (reduce max (map * weights (map - (rest (vals neighbor)) (rest (vals node)))))
+    (reduce max (map * weights (map - (rest (vals node)) (rest (vals neighbor)))))))
 
-(defn build-graph [state all-states]
+(defn all-possible-states [state all-states weights]
+  (reduce (fn [acc possible]
+            (if (possible-state state possible)
+              (assoc acc possible (get-weight state possible weights))
+              acc)) {} all-states))
+
+(defn build-graph [state all-states weights]
   (loop [current state
          visited #{current}
-         neighbors (into [] (all-possible-states current all-states))
-         to-visit neighbors
-         graph [{:node current :neighbors neighbors}]]
+         neighbors (all-possible-states current all-states weights)
+         to-visit (into [] (keys neighbors))
+         graph {current neighbors}]
     (if (empty? to-visit)
       graph      
       (let [next (peek to-visit)
             new-visited (conj visited next)
-            new-neighbors (into [] (all-possible-states next all-states))
-            new-to-visit (into (pop to-visit) (remove visited new-neighbors))
-            new-graph (conj graph {:node next :neighbors new-neighbors})]
+            new-neighbors (all-possible-states next all-states weights)
+            new-to-visit (into (pop to-visit) (remove visited (into [] (keys new-neighbors))))
+            new-graph (assoc graph  next  new-neighbors)]
         (recur next new-visited new-neighbors new-to-visit new-graph)))))
+
+(def graph (build-graph initial all-states weights))
+
+(defn update-paths [paths state neighbors]
+  (reduce (fn [acc [neighbor length]]
+            (if (neighbors neighbor)
+              (if (< (+ (paths state) (neighbors neighbor)) length)
+                  (assoc acc neighbor (+ (paths state) (neighbors neighbor)))
+                  (assoc acc neighbor length))
+              (assoc acc neighbor length))) {} paths))
+
+(def initial-paths
+  (assoc (reduce
+          (fn [acc state]
+            (assoc acc state ##Inf)) {} (keys graph)) initial 0))
+
+(defn shortest-path [graph state initial-paths]
+  (loop [current state
+         visited #{current}
+         to-visit (into [] (keys (graph current)))
+         paths (update-paths initial-paths current (graph current))]
+    (if (empty? to-visit)
+      paths
+      (let [next (peek to-visit)
+            new-visited (conj visited next)
+            new-to-visit (into (pop to-visit) (remove visited (into [] (keys (graph next)))))
+            new-paths (update-paths paths next (graph next))]
+        (recur next new-visited new-to-visit new-paths)))))
+
+(def shortest (shortest-path graph initial initial-paths))
+(def answer (shortest goal))
